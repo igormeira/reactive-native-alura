@@ -8,44 +8,52 @@
 
 import React, {Component} from 'react';
 import {
-  Platform, 
-  StyleSheet, 
-  Text, 
+  Platform,
+  StyleSheet,
+  Text,
   View,
   Image,
   Dimensions,
   ScrollView,
   FlatList
 } from 'react-native';
+import Post from './src/components/Post'
 
 const width = Dimensions.get('screen').width;
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
-
 type Props = {};
 export default class App extends Component<Props> {
+
+  constructor() {
+    super();
+    this.state = {
+      fotos: []
+    }
+  }
+
+  componentDidMount() {
+    fetch('https://instalura-api.herokuapp.com/api/public/fotos/rafael')
+      .then(resposta => resposta.json())
+      .then(json => this.setState({fotos: json}))
+  }
+
   render() {
-    const fotos = [{id: 1, usuario: 'rafael'},
-                   {id: 2, usuario: 'alberto'},
-                   {id: 3, usuario: 'vitor'}];
     return (
-      <FlatList style={{marginTop: 20}}
+      <FlatList
+        style={styles.container}
         keyExtractor={item => item.id}
-        data={fotos}
+        data={this.state.fotos}
         renderItem={({item}) =>
-          <View> 
-            <Text>{item.usuario}</Text>
-            <Image source={require('./resources/img/alura.png')}
-                 style={{width: width, height: width}}/>
-          </View>
+          <Post foto={item}/>
         }
       />
 
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: 20
+  }
+});
