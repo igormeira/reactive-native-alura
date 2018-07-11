@@ -37,6 +37,64 @@ export default class App extends Component<Props> {
       .then(json => this.setState({fotos: json}))
   }
 
+  like(idFoto) {
+    const foto = this.state.fotos.find(foto => foto.id === idFoto);
+    let novalista = []
+
+    if(!foto.likeada) {
+      novalista = [
+        ...foto.likers,
+        {login: 'meuUsuario'}
+      ]
+    } else {
+      novalista = foto.likers.filter(liker => {
+        return liker.login !== 'meuUsuario'
+      })
+    }
+
+    const fotoAtualizada = {
+      ...foto,
+      likeada: !foto.likeada,
+      likers: novalista
+    }
+
+    const fotos = this.state.fotos.map(foto =>
+      foto.id === fotoAtualizada.id ? fotoAtualizada : foto)
+
+    this.setState({fotos: fotos})
+  }
+
+  adicionaComentario(idFoto, valorComentario, inputComentario) {
+    if (valorComentario === '') {
+      return;
+    }
+
+    const foto = this.state.fotos.find(
+      foto => foto.id === idFoto
+    )
+
+    const novalista = [
+      ...foto.comentario,
+      {id: valorComentario,
+       login: 'meuUsuario',
+       texto: valorComentario
+      }
+    ];
+
+    const fotoAtualizada = {
+      ...foto,
+      comentarios: novalista
+    }
+
+    const fotos = this.state.fotos.map(
+      foto => foto.id === fotoAtualizada.id ? fotoAtualizada : foto
+    )
+
+    this.setState({fotos: fotos});
+    inputComentario.clear();
+
+  }
+
   render() {
     return (
       <FlatList
@@ -44,7 +102,9 @@ export default class App extends Component<Props> {
         keyExtractor={item => item.id}
         data={this.state.fotos}
         renderItem={({item}) =>
-          <Post foto={item}/>
+          <Post foto={item}
+            likeCallback={this.like.bind(this)}
+            comentarioCallback={this.adicionaComentario.bind(this)}/>
         }
       />
 
@@ -52,8 +112,9 @@ export default class App extends Component<Props> {
   }
 }
 
+const margem = Platform.OS == 'ios' ? 20 : 0;
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20
+    marginTop: margem
   }
 });
