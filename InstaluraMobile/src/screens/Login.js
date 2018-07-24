@@ -59,6 +59,11 @@ export default class Login extends Component<Props> {
       .then(token => {
         AsyncStorage.setItem('token', token);
         AsyncStorage.setItem('usuario', this.state.usuario);
+
+        this.props.navigator.resetTo({
+          screen: 'Feed',
+          title: 'Feed'
+        })
       })
       .catch(e => this.setState({mensagem: e.message}))
   }
