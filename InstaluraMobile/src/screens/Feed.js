@@ -19,6 +19,8 @@ import {
   AsyncStorage
 } from 'react-native';
 import Post from './../components/Post'
+import InstaluraFetchService from '../services/InstaluraFetchService'
+import Notificacao from '../api/Notificacao'
 
 const width = Dimensions.get('screen').width;
 
@@ -33,22 +35,24 @@ export default class Feed extends Component<Props> {
   }
 
   componentDidMount() {
-    const uri = 'https://instalura-api.herokuapp.com/api/fotos';
+    this.props.navigator.setOnNavigatorEvent(event => {
+      if(event.id === 'willAppear')
+        this.load();
+    });
+  }
 
-    AsyncStorage.getItem('token')
-      .then(token => {
-        return {
-          headers: new Headers({
-            'X-AUTH-TOKEN': token
-          })
-        }
-      })
-      .then(requestInfo => fetch(uri, requestInfo))
-      .then(resposta => resposta.json())
+  load() {
+    let uri = '/fotos';
+    if(this.props.usuario)
+      uri = `/public/fotos/${this.props.usuario}`;
+
+    InstaluraFetchService.get('/fotos')
       .then(json => this.setState({fotos: json}))
+      .catch(e => this.setState({status: 'FALHA_CARREGAMENTO'}));
   }
 
   like(idFoto) {
+    const listaOriginal = this.state.fotos;
     const foto = this.state.fotos.find(foto => foto.id === idFoto);
 
     AsyncStorage.getItem('usuario')
@@ -76,17 +80,11 @@ export default class Feed extends Component<Props> {
           foto.id === fotoAtualizada.id ? fotoAtualizada : foto)
         this.setState({fotos: fotos})
       })
-    const uri = `https://instalura-api.herokuapp.com/api/fotos/${idFoto}/like`;
-    AsyncStorage.getItem('token')
-      .then(token => {
-        return {
-          method: 'POST',
-          headers: new Headers({
-            'X-AUTH-TOKEN': token
-          })
-        }
-      })
-      .then(requestInfo => fetch(uri, requestInfo))
+    InstaluraFetchService.post(`/fotos/${idFoto}/like`)
+      .catch(e => {
+        this.setState({fotos: listaOriginal})
+        Notificacao.exibe('Ops..', 'Algo deu errado!')
+      });
   }
 
   adicionaComentario(idFoto, valorComentario, inputComentario) {
@@ -97,24 +95,10 @@ export default class Feed extends Component<Props> {
     const foto = this.state.fotos.find(
       foto => foto.id === idFoto
     )
-
-    const uri = `https://instalura-api.herokuapp.com/api/fotos/${idFoto}/comment`;
-
-    AsyncStorage.getItem('token')
-      .then(token => {
-        return {
-          method: 'POST',
-          body: JSON.stringify({
-            texto: valorComentario
-          }),
-          headers: new Headers({
-            'Content-type': 'application/json',
-            'X-AUTH-TOKEN': token
-          })
-        };
-      })
-      .then(requestInfo => fetch(uri, requestInfo))
-      .then(resposta => resposta.json())
+    const comentario = {
+      texto: valorComentario
+    }
+    InstaluraFetchService.post(`/fotos/${idFoto}/comment`, comentario)
       .then(comentario => [...foto.comentario, comentario])
       .then(novalista => {
         const fotoAtualizada = {
@@ -127,6 +111,22 @@ export default class Feed extends Component<Props> {
         this.setState({fotos: fotos});
         inputComentario.clear();
       })
+      .catch(e => {
+        Notificacao.exibe('Ops..', 'Algo deu errado!')
+      });
+  }
+
+  verPerfilUsuario(idFoto) {
+    const foto = this.state.fotos.find(foto => foto.id === idFoto);
+
+    this.props.navigator.push({
+      screen: 'PerfilUsuario',
+      backButtonTitle: '',
+      title: foto.loginUsuario,
+      passProps: {
+        usuario: foto.loginUsuario
+      }
+    })
   }
 
   render() {
@@ -137,7 +137,8 @@ export default class Feed extends Component<Props> {
         renderItem={({item}) =>
           <Post foto={item}
             likeCallback={this.like.bind(this)}
-            comentarioCallback={this.adicionaComentario.bind(this)}/>
+            comentarioCallback={this.adicionaComentario.bind(this)}
+            verPerfilCallback={this.verPerfilUsuario.bind(this)}/>
         }
       />
 

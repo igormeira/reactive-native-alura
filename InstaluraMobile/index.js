@@ -8,6 +8,7 @@ import { AsyncStorage } from 'react-native';
 
 Navigation.registerComponent('Login', () => Login);
 Navigation.registerComponent('Feed', () => Feed);
+Navigation.registerComponent('PerfilUsuario', () => Feed);
 
 AsyncStorage.getItem('token')
   .then(token => {
